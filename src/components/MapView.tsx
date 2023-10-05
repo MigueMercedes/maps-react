@@ -1,17 +1,35 @@
-import { useContext } from "react"
+import { useContext, useLayoutEffect, useRef } from "react"
 import { PlacesContext } from "../context"
 import { Loading } from "./"
 
-export const MapView = () => {
+// const map = new Loader({apiKey: 'AIzaSyCQV50nXqYXU1MSh87ENFLsZp48YqHoZlQ'})
 
-  const { isLoading, userLocation } = useContext( PlacesContext )
+export const MapView = () => {
+  
+  const { isLoading, userLocation } = useContext( PlacesContext );
+  const mapDiv = useRef<HTMLDivElement>( null );
+
+  // useLayoutEffect( () => {
+  //   if( !isLoading ) {
+      
+  //     })
+  //   }
+  // }, [ isLoading])
 
   if( isLoading ){
     return ( <Loading />)
   }
 
   return (
-    <div>
+    <div ref={ mapDiv }
+      style={{
+        height: '100vh',
+        width: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0
+      }}
+    >
       { userLocation?.join(',')} 
     </div>
   )
