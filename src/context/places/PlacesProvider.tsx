@@ -8,13 +8,13 @@ export interface PlacesState {
   userLocation?: [ number, number ];
 }
 
+interface Props {
+  children: JSX.Element | JSX.Element[];
+}
+
 const INITIAL_STATE: PlacesState = {
   isLoading: true,
   userLocation: undefined
-}
-
-interface Props {
-  children: JSX.Element | JSX.Element[];
 }
 
 
