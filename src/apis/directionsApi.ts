@@ -8,7 +8,7 @@ const directionsApi = axios.create({
     language: 'es',
     overview: 'simplified',
     steps: false,
-    access_token: 'pk.eyJ1IjoibWNkLW1pZ3VlIiwiYSI6ImNsbmR0ZjhiejA3YWYya3Jpemh5dnd6MW4ifQ.T1LJsvF2ZVF5chVSckk-NQ'
+    access_token: process.env.REACT_APP_ACCESS_TOKEN
   }
 })
 
