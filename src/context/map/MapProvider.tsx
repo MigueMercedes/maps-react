@@ -1,11 +1,13 @@
-import { Map } from "mapbox-gl";
+import { Map, Marker, Popup } from "mapbox-gl";
 import { MapContext } from "./MapContext";
-import { useReducer } from 'react';
+import { useReducer, useContext, useEffect } from 'react';
 import { mapReducer } from "./mapReducer";
+import { PlacesContext } from "../places/PlacesContext";
 
 export interface MapState {
   isMapReady: boolean;
   map?: Map;
+  markers: Marker[];
 }
 
 interface Props {
@@ -14,14 +16,56 @@ interface Props {
 
 const INITIAL_STATE: MapState = {
   isMapReady: false, 
-  map: undefined
+  map: undefined,
+  markers: []
 }
 
 export const MapProvider = ({ children }: Props) => {
 
   const [state, dispatch] = useReducer( mapReducer, INITIAL_STATE )
+  const { places } = useContext( PlacesContext )
+
+  useEffect(() => {
+    state.markers.forEach( market => market.remove() );
+    const newMarkers: Marker[] = [];
+
+    for (const place of places) {
+      const [ lng, lat ] = place.center;
+      const popup = new Popup()
+        .setHTML(`
+          <h6>${ place.text }</h6>
+          <p>${ place.place_name }</p>
+        `
+      );
+
+      const newMarker = new Marker()
+        .setPopup( popup )
+        .setLngLat([ lng, lat ])
+        .addTo( state.map! );
+      
+      newMarkers.push( newMarker );
+    }
+
+    // TODO: Clear polyline
+
+    dispatch({ type: 'setMarkers', payload: newMarkers})
+  }, [ places ]);
 
   const setMap = ( map: Map) => {
+
+    const myLocationPopup = new Popup()
+      .setHTML(`
+      <h4>I'm here</h4>    
+      <p>Somewhere in the world</p>
+    `);
+
+    new Marker({
+      color: '61DAFB',
+    })
+      .setLngLat( map.getCenter() )
+      .setPopup( myLocationPopup )
+      .addTo( map );
+
     dispatch({ type: "setMap", payload: map });
   }
 

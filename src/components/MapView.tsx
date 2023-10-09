@@ -19,7 +19,7 @@ export const MapView = () => {
       })
       setMap( map )
     }
-  }, [ isLoading])
+  }, [ isLoading ])
 
   if( isLoading ){
     return ( <Loading />)
@@ -28,8 +28,8 @@ export const MapView = () => {
   return (
     <div ref={ mapDiv }
       style={{
-        height: '100vh',
-        width: '100vh',
+        height: '100%',
+        width: '100%',
         position: 'fixed',
         top: 0,
         left: 0
