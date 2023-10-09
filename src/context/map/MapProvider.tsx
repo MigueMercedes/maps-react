@@ -1,13 +1,21 @@
-import { Map, Marker, Popup } from "mapbox-gl";
+import { AnySourceData, LngLatBounds, Map, Marker, Popup } from "mapbox-gl";
 import { MapContext } from "./MapContext";
-import { useReducer, useContext, useEffect } from 'react';
+import { useReducer, useContext, useEffect, useState } from 'react';
 import { mapReducer } from "./mapReducer";
 import { PlacesContext } from "../places/PlacesContext";
+import { directionsApi } from "../../apis";
+import { DirectionsResponse } from "../../interfaces/directions";
+
 
 export interface MapState {
   isMapReady: boolean;
   map?: Map;
   markers: Marker[];
+}
+
+export interface TravelTime {
+  kms: number;
+  minutes: number;
 }
 
 interface Props {
@@ -24,6 +32,10 @@ export const MapProvider = ({ children }: Props) => {
 
   const [state, dispatch] = useReducer( mapReducer, INITIAL_STATE )
   const { places } = useContext( PlacesContext )
+  const [travelTime, setTravelTime] = useState<TravelTime>({
+    kms: 0,
+    minutes: 0
+  });
 
   useEffect(() => {
     state.markers.forEach( market => market.remove() );
@@ -46,10 +58,10 @@ export const MapProvider = ({ children }: Props) => {
       newMarkers.push( newMarker );
     }
 
-    // TODO: Clear polyline
-
     dispatch({ type: 'setMarkers', payload: newMarkers})
-  }, [ places ]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ places ] );
 
   const setMap = ( map: Map) => {
 
@@ -59,9 +71,7 @@ export const MapProvider = ({ children }: Props) => {
       <p>Somewhere in the world</p>
     `);
 
-    new Marker({
-      color: '61DAFB',
-    })
+    new Marker()
       .setLngLat( map.getCenter() )
       .setPopup( myLocationPopup )
       .addTo( map );
@@ -69,12 +79,85 @@ export const MapProvider = ({ children }: Props) => {
     dispatch({ type: "setMap", payload: map });
   }
 
+  const getRouteBetweenPoints = async ( start: [ number, number ], end: [ number, number ] ) => {
+    const resp = await directionsApi.get<DirectionsResponse>(`/${ start.join(',') };${ end.join(',') }`)
+
+    const { distance, duration, geometry } = resp.data.routes[0];
+
+    const { coordinates: coords } = geometry;
+
+    let kms = distance / 1000;
+    kms = Math.round( kms * 100 );
+    kms /= 100;
+
+    const minutes = Math.floor( duration / 60 );
+
+    setTravelTime({
+      kms,
+      minutes
+    });
+
+    const bounds = new LngLatBounds(
+      start,
+      start
+    );
+
+    for (const coord of coords) {
+      const newCoord: [ number, number ] = [ coord[0], coord[1] ];
+      bounds.extend(newCoord)
+    }
+
+    state.map?.fitBounds(bounds, {
+      padding: 200,
+    })
+
+    // Polyline
+    const sourceData: AnySourceData = {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: coords
+            }
+          }
+        ]
+      }
+    }
+
+    if ( state.map?.getLayer('RouteString') ) {
+      state.map.removeLayer('RouteString');
+      state.map.removeSource('RouteString');
+    }
+
+    state.map?.addSource( 'RouteString', sourceData );
+
+    state.map?.addLayer({
+			id: 'RouteString',
+			type: 'line',
+			source: 'RouteString',
+			layout: {
+				'line-cap': 'round',
+				'line-join': 'round'
+			},
+			paint: {
+				'line-color': 'black',
+				'line-width': 3
+			}
+		})
+  }
+
   return (
     <MapContext.Provider value={{
       ...state,
-
+      travelTime,
       // Methods
-      setMap
+      setMap,
+      getRouteBetweenPoints
     }}>
       { children}
     </MapContext.Provider>

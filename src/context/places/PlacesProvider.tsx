@@ -23,7 +23,6 @@ const INITIAL_STATE: PlacesState = {
   places: []
 }
 
-
 export const PlacesProvider = ({ children }: Props) => {
 
   const [state, dispatch] = useReducer(placesReducer, INITIAL_STATE);
